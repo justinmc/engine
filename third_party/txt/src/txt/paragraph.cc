@@ -23,6 +23,7 @@
 #include <numeric>
 #include <utility>
 #include <vector>
+#include <codecvt>
 
 #include <minikin/Layout.h>
 #include "flutter/fml/logging.h"
@@ -236,6 +237,8 @@ void Paragraph::SetText(std::vector<uint16_t> text, StyledRuns runs) {
   runs_ = std::move(runs);
 }
 
+// TODO(justinmc): When truncating, this needs to break lines up differently.
+// Include overflowing word on final visible line.
 bool Paragraph::ComputeLineBreaks() {
   line_ranges_.clear();
   line_widths_.clear();
@@ -245,10 +248,13 @@ bool Paragraph::ComputeLineBreaks() {
   for (size_t i = 0; i < text_.size(); ++i) {
     ULineBreak ulb = static_cast<ULineBreak>(
         u_getIntPropertyValue(text_[i], UCHAR_LINE_BREAK));
-    if (ulb == U_LB_LINE_FEED || ulb == U_LB_MANDATORY_BREAK)
+    if (ulb == U_LB_LINE_FEED || ulb == U_LB_MANDATORY_BREAK) {
       newline_positions.push_back(i);
+    }
   }
   newline_positions.push_back(text_.size());
+  // TODO(justinmc): At this point, newline_positions has only the last
+  // position in it, because our strings have no newline characters.
 
   size_t run_index = 0;
   for (size_t newline_index = 0; newline_index < newline_positions.size();
@@ -326,6 +332,7 @@ bool Paragraph::ComputeLineBreaks() {
           minikin::isLineEndSpace(text_[line_end_excluding_whitespace - 1])) {
         line_end_excluding_whitespace--;
       }
+      FML_DLOG(ERROR) << "justin add line range: " << line_start << ", " << line_end;
       line_ranges_.emplace_back(line_start, line_end,
                                 line_end_excluding_whitespace,
                                 line_end_including_newline, hard_break);
@@ -524,8 +531,15 @@ void Paragraph::Layout(double width, bool force) {
 
   for (size_t line_number = 0; line_number < line_limit; ++line_number) {
     const LineRange& line_range = line_ranges_[line_number];
+    for (uint i = line_range.start; i < line_range.end; ++i) {
+      uint16_t thing = text_[i];
+      std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert;
+      std::string string = convert.to_bytes(thing);
+      FML_DLOG(ERROR) << "justin line: " << string;
+    }
 
     // Break the line into words if justification should be applied.
+    // TODO(justinmc): This is alsways not justified for my purposes.
     std::vector<Range<size_t>> words;
     double word_gap_width = 0;
     size_t word_index = 0;
@@ -607,10 +621,21 @@ void Paragraph::Layout(double width, bool force) {
       size_t text_start = run.start();
       size_t text_count = run.end() - run.start();
       size_t text_size = text_.size();
+      FML_DLOG(ERROR) << "justin start for loop with " << text_size << ", " << text_count;
+
+      /*
+      for (uint i = 0; i < text_.size(); ++i) {
+        uint16_t thing = text_[i];
+        std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert;
+        std::string string = convert.to_bytes(thing);
+        FML_DLOG(ERROR) << "justin whole text: " << string;
+      }
+      */
 
       // Apply ellipsizing if the run was not completely laid out and this
       // is the last line (or lines are unlimited).
       const std::u16string& ellipsis = paragraph_style_.ellipsis;
+
       std::vector<uint16_t> ellipsized_text;
       if (ellipsis.length() && !isinf(width_) && !line_range.hard_break &&
           line_run_it == line_runs.end() - 1 &&
@@ -621,18 +646,39 @@ void Paragraph::Layout(double width, bool force) {
             ellipsis.length(), ellipsis.length(), run.is_rtl(), minikin_font,
             minikin_paint, minikin_font_collection, nullptr);
 
+        // TODO(justinmc): text_advances is the width of each character for run.
         std::vector<float> text_advances(text_count);
         float text_width =
             layout.measureText(text_ptr, text_start, text_count, text_.size(),
                                run.is_rtl(), minikin_font, minikin_paint,
                                minikin_font_collection, text_advances.data());
+        FML_DLOG(ERROR) << "justin ellipsis required. text_count: " << text_count;
 
         // Truncate characters from the text until the ellipsis fits.
         size_t truncate_count = 0;
-        while (truncate_count < text_count &&
-               run_x_offset + text_width + ellipsis_width > width_) {
-          text_width -= text_advances[text_count - truncate_count - 1];
-          truncate_count++;
+        if (run_x_offset + text_width + ellipsis_width > width_) {
+          while (truncate_count < text_count &&
+                 run_x_offset + text_width + ellipsis_width > width_) {
+            FML_DLOG(ERROR) << "justin need to truncate to fit ellipsis " << truncate_count << " " << text_width << " " << text_count;
+            text_width -= text_advances[text_count - truncate_count - 1];
+            truncate_count++;
+          }
+        } else {
+          FML_DLOG(ERROR) << "justin extra space after ellipsis ";
+          FML_DLOG(ERROR) << (line_range.end - line_range.start) << " vs " << text_advances.size();
+          // TODO(justinmc): Potential hacky solution: If there is extra space in
+          // the line and there is another line, grab words until no more space.
+          //int line_length = text_count; // Is that always right?
+          bool is_extra_space = true; // TODO
+          bool is_next_line = line_run_it != line_runs.end();
+          if (is_extra_space && is_next_line) {
+            //auto next_line = line_run_it + 1;
+
+            while (run_x_offset + text_width + ellipsis_width > width_) {
+              // TODO(justinmc): What is text_advances? Can I get next line widths from it?
+              text_width += text_advances[text_count - 1];
+            }
+          }
         }
 
         ellipsized_text.reserve(text_count - truncate_count +
@@ -642,6 +688,14 @@ void Paragraph::Layout(double width, bool force) {
                                text_.begin() + run.end() - truncate_count);
         ellipsized_text.insert(ellipsized_text.end(), ellipsis.begin(),
                                ellipsis.end());
+
+        for (uint i = 0; i < ellipsized_text.size(); ++i) {
+          uint16_t thing = ellipsized_text[i];
+          std::wstring_convert<std::codecvt_utf8_utf16<char16_t>,char16_t> convert;
+          std::string ellipsized_string = convert.to_bytes(thing);
+          FML_DLOG(ERROR) << "justin ellipsized_text: " << ellipsized_string;
+        }
+
         text_ptr = ellipsized_text.data();
         text_start = 0;
         text_count = ellipsized_text.size();

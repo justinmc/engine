@@ -385,6 +385,7 @@ float LineBreaker::currentLineWidth() const {
   return mLineWidths.getLineWidth(mBreaks.size());
 }
 
+// TODO(justinmc): This one is always used in my tests.
 void LineBreaker::computeBreaksGreedy() {
   // All breaks but the last have been added in addCandidate already.
   size_t nCand = mCandidates.size();

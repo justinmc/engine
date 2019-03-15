@@ -627,6 +627,8 @@ float Layout::measureText(const uint16_t* buf,
   return advance;
 }
 
+// TODO(justinmc): It looks like this adds the word positions into advances,
+// among other things.
 float Layout::doLayoutRunCached(
     const uint16_t* buf,
     size_t start,
