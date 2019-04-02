@@ -236,6 +236,7 @@ void Paragraph::SetText(std::vector<uint16_t> text, StyledRuns runs) {
   runs_ = std::move(runs);
 }
 
+// TODO(justinmc): 1. This seems to be the thing that I need to fix.
 bool Paragraph::ComputeLineBreaks() {
   line_ranges_.clear();
   line_widths_.clear();
@@ -300,6 +301,9 @@ bool Paragraph::ComputeLineBreaks() {
       size_t run_start = std::max(run.start, block_start) - block_start;
       size_t run_end = std::min(run.end, block_end) - block_start;
       bool isRtl = (paragraph_style_.text_direction == TextDirection::rtl);
+      // TODO(justinmc): 3. addStyleRun might be what actually calculates the
+      // breaks. Calls addWordBreak which calls addCandidate which is used by
+      // computeLineBreaks.
       double run_width = breaker_.addStyleRun(&paint, collection, font,
                                               run_start, run_end, isRtl);
       block_total_width += run_width;
@@ -522,6 +526,8 @@ void Paragraph::Layout(double width, bool force) {
   size_t line_limit = std::min(paragraph_style_.max_lines, line_ranges_.size());
   did_exceed_max_lines_ = (line_ranges_.size() > paragraph_style_.max_lines);
 
+  // TODO(justinmc): line_ranges_.size() is the number of current lines.
+  // It's showing what I see in the app, so it's wrong.
   for (size_t line_number = 0; line_number < line_limit; ++line_number) {
     const LineRange& line_range = line_ranges_[line_number];
 
@@ -591,6 +597,8 @@ void Paragraph::Layout(double width, bool force) {
     double justify_x_offset = 0;
     std::vector<PaintRecord> paint_records;
 
+    // TODO(justinmc): I don't quite understand what line_runs is yet... It has
+    // a length of 0, 1, and 2 in testing this bug.
     for (auto line_run_it = line_runs.begin(); line_run_it != line_runs.end();
          ++line_run_it) {
       const BidiRun& run = *line_run_it;
@@ -740,6 +748,8 @@ void Paragraph::Layout(double width, bool force) {
           float grapheme_advance =
               glyph_advance / grapheme_code_unit_counts.size();
 
+          // TODO(justinmc): This is in a loop for every character. In the
+          // overflowing characters, glyph_x_offset is too high, should wrap.
           glyph_positions.emplace_back(run_x_offset + glyph_x_offset,
                                        grapheme_advance,
                                        run.start() + glyph_code_units.start,
@@ -808,6 +818,7 @@ void Paragraph::Layout(double width, bool force) {
                   [](const GlyphPosition& a, const GlyphPosition& b) {
                     return a.code_units.start < b.code_units.start;
                   });
+        // TODO(justinmc): glyph_positions.back().x_pos.start is the problem.
         line_code_unit_runs.emplace_back(
             std::move(code_unit_positions),
             Range<size_t>(run.start(), run.end()),
@@ -843,6 +854,8 @@ void Paragraph::Layout(double width, bool force) {
                                  : text_.size();
     glyph_lines_.emplace_back(std::move(line_glyph_positions),
                               next_line_start - line_range.start);
+    // TODO(justinmc): I think somewhere above the
+    // line_code_unit_runs.positions[0].x_pos.start is being set incorrectly.
     code_unit_runs_.insert(code_unit_runs_.end(), line_code_unit_runs.begin(),
                            line_code_unit_runs.end());
 
@@ -1276,6 +1289,8 @@ std::vector<Paragraph::TextBox> Paragraph::GetRectsForRange(
       right = SK_ScalarMin;
       for (const GlyphPosition& gp : run.positions) {
         if (gp.code_units.start >= start && gp.code_units.end <= end) {
+          // TODO(justinmc): This is where the bad value comes from. Now check
+          // gp.x_pos.start
           left = std::min(left, static_cast<SkScalar>(gp.x_pos.start));
           right = std::max(right, static_cast<SkScalar>(gp.x_pos.end));
         } else if (gp.code_units.end == end) {
@@ -1364,6 +1379,7 @@ std::vector<Paragraph::TextBox> Paragraph::GetRectsForRange(
     // Handle rect_height_styles. The height metrics used are all positive to
     // make the signage clear here.
     if (rect_height_style == RectHeightStyle::kTight) {
+      // TODO(justinmc): error I've seen is always kTight
       // Ignore line max height and width and generate tight bounds.
       boxes.insert(boxes.end(), kv.second.boxes.begin(), kv.second.boxes.end());
     } else if (rect_height_style == RectHeightStyle::kMax) {
@@ -1423,6 +1439,10 @@ std::vector<Paragraph::TextBox> Paragraph::GetRectsForRange(
                            box.direction);
       }
     }
+  }
+  if (boxes.size() > 0) {
+    Paragraph::TextBox box = boxes[0];
+    FML_DLOG(ERROR) << "justin hi boxes end" << box.rect.fLeft;
   }
   return boxes;
 }

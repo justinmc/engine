@@ -167,8 +167,10 @@ float LineBreaker::addStyleRun(MinikinPaint* paint,
       // fall back to greedy; other modes don't know how to deal with tabs
       mStrategy = kBreakStrategy_Greedy;
     } else {
-      if (isWordSpace(c))
+      if (isWordSpace(c)) {
+        FML_DLOG(ERROR) << "justin " << c << " is a word space";
         mSpaceCount += 1;
+      }
       mWidth += mCharWidths[i];
       if (!isLineEndSpace(c)) {
         postBreak = mWidth;
@@ -179,6 +181,7 @@ float LineBreaker::addStyleRun(MinikinPaint* paint,
     if (i + 1 == current) {
       size_t wordStart = mWordBreaker.wordStart();
       size_t wordEnd = mWordBreaker.wordEnd();
+      FML_DLOG(ERROR) << "justin start to end: " << wordStart << ", " << wordEnd << ", btw width of current is " << mCharWidths[current];
       if (paint != nullptr && mHyphenator != nullptr &&
           mHyphenationFrequency != kHyphenationFrequency_None &&
           wordStart >= start && wordEnd > wordStart &&
@@ -514,6 +517,7 @@ void LineBreaker::computeBreaksOptimal(bool isRectangle) {
 
 size_t LineBreaker::computeBreaks() {
   if (mStrategy == kBreakStrategy_Greedy) {
+    // TODO(justinmc): 2 I always seen greedy, never optimal for this example.
     computeBreaksGreedy();
   } else {
     computeBreaksOptimal(mLineWidths.isConstant());
