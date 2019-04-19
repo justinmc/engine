@@ -1266,6 +1266,8 @@ std::vector<Paragraph::TextBox> Paragraph::GetRectsForRange(
       continue;
 
     double baseline = line_baselines_[run.line_number];
+    // TODO(justinmc): These 2 addends are almost equal, but one is negative,
+    // so very close to zero.
     SkScalar top = baseline + run.font_metrics.fAscent;
     SkScalar bottom = baseline + run.font_metrics.fDescent;
 
@@ -1309,6 +1311,9 @@ std::vector<Paragraph::TextBox> Paragraph::GetRectsForRange(
         first_line_dir = run.direction;
       }
     }
+    FML_LOG(ERROR) << "justin add line metrix box 1: " << top << " = " << baseline << " + " << run.font_metrics.fAscent;
+    // TODO(justinmc): This is the only place called where linemetrix gets boxes.
+    // top is the one with -0.1.
     line_metrics[run.line_number].boxes.emplace_back(
         SkRect::MakeLTRB(left, top, right, bottom), run.direction);
   }
@@ -1371,6 +1376,8 @@ std::vector<Paragraph::TextBox> Paragraph::GetRectsForRange(
     // make the signage clear here.
     if (rect_height_style == RectHeightStyle::kTight) {
       // Ignore line max height and width and generate tight bounds.
+      //FML_LOG(ERROR) << "justin insert box: " << kv.second.boxes[0].rect.top();
+      // TODO(justinmc): This is the only time something is added to boxes
       boxes.insert(boxes.end(), kv.second.boxes.begin(), kv.second.boxes.end());
     } else if (rect_height_style == RectHeightStyle::kMax) {
       for (const Paragraph::TextBox& box : kv.second.boxes) {
@@ -1430,6 +1437,8 @@ std::vector<Paragraph::TextBox> Paragraph::GetRectsForRange(
       }
     }
   }
+  //FML_LOG(ERROR) << "justin boxes yo: " << boxes.size();
+  // TODO(justinmc): I believe an extra -0.1 ends up in the y of a box here.
   return boxes;
 }
 
