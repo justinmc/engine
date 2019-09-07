@@ -5,6 +5,7 @@
 package io.flutter.plugin.editing;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.text.DynamicLayout;
 import android.text.Editable;
 import android.text.Layout;
@@ -16,6 +17,10 @@ import android.view.View;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+
+import android.view.inputmethod.InputContentInfo;
+import android.view.inputmethod.CorrectionInfo;
+import android.view.inputmethod.CompletionInfo;
 
 import io.flutter.embedding.engine.systemchannels.TextInputChannel;
 import io.flutter.Log;
@@ -50,6 +55,15 @@ class InputConnectionAdaptor extends BaseInputConnection {
         mImm = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
     }
 
+    private static final String TAG = "InputConnectionAdapter";
+
+    private int lastComposingStart;
+    private int lastComposingEnd;
+    private int lastExistingComposingStart;
+    private int lastExistingComposingEnd;
+    private CharSequence lastComposingText;
+    private boolean didCommit = false;
+
     // Send the current state of the editable to Flutter.
     private void updateEditingState() {
         // If the IME is in the middle of a batch edit, then wait until it completes.
@@ -60,6 +74,13 @@ class InputConnectionAdaptor extends BaseInputConnection {
         int selectionEnd = Selection.getSelectionEnd(mEditable);
         int composingStart = BaseInputConnection.getComposingSpanStart(mEditable);
         int composingEnd = BaseInputConnection.getComposingSpanEnd(mEditable);
+
+        lastComposingStart = composingStart;
+        lastComposingEnd = composingEnd;
+        if (composingStart >= 0 && composingEnd >= 0) {
+          lastExistingComposingStart = composingStart;
+          lastExistingComposingEnd = composingEnd;
+        }
 
         mImm.updateSelection(mFlutterView,
                              selectionStart, selectionEnd,
@@ -73,6 +94,82 @@ class InputConnectionAdaptor extends BaseInputConnection {
             composingStart,
             composingEnd
         );
+
+        // TODO(justinmc): Moving the cursor calls here, could call commitText when that happens?
+        // But seems like I don't have the necessary parameters to be able to
+        // call commitText.
+        // What about calling finishComposingText?
+        Log.d("justin", "updateEditingState selection,composing: " + selectionStart + " - " + selectionEnd + ", " + composingStart + " - " + composingEnd);
+        //super.commitText(mEditable.toString(), selectionStart);
+    }
+
+    @Override
+    public boolean clearMetaKeyStates(int status) {
+      Log.d("justin", "clearMetaKeyStates");
+      return super.clearMetaKeyStates(status);
+    }
+
+    @Override
+    public void closeConnection() {
+      Log.d("justin", "closeConnection");
+      super.closeConnection();
+    }
+
+    @Override
+    public boolean commitCompletion(CompletionInfo info) {
+      Log.d("justin", "commitcompletion");
+      return super.commitCompletion(info);
+    }
+
+    @Override
+    public boolean commitContent(InputContentInfo info, int flags, Bundle opts) {
+      Log.d("justin", "commitContent " + flags);
+      return super.commitContent(info, flags, opts);
+    }
+
+    @Override
+    public boolean commitCorrection(CorrectionInfo correctionInfo) {
+      Log.d("justin", "commitCorrection");
+      return super.commitCorrection(correctionInfo);
+    }
+
+    @Override
+    public boolean deleteSurroundingTextInCodePoints(int beforeLength, int afterLength) {
+        Log.d("justin", "deleteSurroundingTextInCodePoints " + beforeLength + ", " + afterLength);
+        return super.deleteSurroundingTextInCodePoints(beforeLength, afterLength);
+    }
+
+    @Override
+    public boolean finishComposingText() {
+        Log.d("justin", "finishComposingText");
+        /*
+        if (lastComposingStart == -1 && lastComposingEnd == -1 && !didCommit) {
+          didCommit = true;
+          final Editable content = getEditable();
+          int cursorPosition = Selection.getSelectionEnd(content);
+          Log.d("justin", "hack it " + lastComposingText + " | " + cursorPosition);
+          commitText(lastComposingText, cursorPosition);
+        }
+        */
+        return super.finishComposingText();
+    }
+
+    @Override
+    public boolean performContextMenuAction (int id) {
+        Log.d("justin", "performContextMenuAction: " + id);
+        return super.performContextMenuAction(id);
+    }
+
+    @Override
+    public boolean performPrivateCommand (String action, Bundle data) {
+        Log.d("justin", "performPrivateCommand: " + action);
+        return super.performPrivateCommand(action, data);
+    }
+
+    @Override
+    public boolean requestCursorUpdates (int cursorUpdateMode) {
+        Log.d("justin", "requestCursorUpdates " + cursorUpdateMode);
+        return super.requestCursorUpdates(cursorUpdateMode);
     }
 
     @Override
@@ -83,6 +180,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
     @Override
     public boolean beginBatchEdit() {
         mBatchCount++;
+        Log.d("justin", "beginBatchEdit " + mBatchCount);
         return super.beginBatchEdit();
     }
 
@@ -90,12 +188,14 @@ class InputConnectionAdaptor extends BaseInputConnection {
     public boolean endBatchEdit() {
         boolean result = super.endBatchEdit();
         mBatchCount--;
+        Log.d("justin", "endBatchEdit: " + mBatchCount);
         updateEditingState();
         return result;
     }
 
     @Override
     public boolean commitText(CharSequence text, int newCursorPosition) {
+        Log.d("justin", "commit");
         boolean result = super.commitText(text, newCursorPosition);
         updateEditingState();
         return result;
@@ -103,6 +203,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean deleteSurroundingText(int beforeLength, int afterLength) {
+        Log.d("justin", "deleteSurroundingText");
         if (Selection.getSelectionStart(mEditable) == -1)
             return true;
 
@@ -111,19 +212,95 @@ class InputConnectionAdaptor extends BaseInputConnection {
         return result;
     }
 
+    // TODO(justinmc):
+    //
+    // Good device:
+    // (composing region)
+    // (0,1) L|
+    // (0,2) LO|
+    // (0,3) LOL|
+    // (0,4) LOLO|
+    // (-1,-1) LO|LO
+    // setComposingText L
+    // (2,3) LOL|LO
+    //
+    // Bad device:
+    // (0,1) L|
+    // (0,2) LO|
+    // (0,3) LOL|
+    // (0,4) LOLO|
+    // (-1,-1) LO|LO
+    // setComposingRegion (0,2)
+    // setComposingText LOLOL
+    // (0,5) LOLOL|LO
+    //
+    // About the call to setComposingRegion on the bad device.
+    // The effect is that it replaces the composing region (0,2 LO) with the new
+    // composing text when setComposingText is called. If I comment it out, then
+    // it just inserts the text from setComposingText without erasing anything,
+    // so the result is (2,7) LOLOLOL|LO.
+    //
+    // So right now my understanding of the problem is this:
+    //   1. setComposingRegion is called before inserting a new character when
+    //      it shouldn't be, and it's called with strange values that I don't
+    //      fully understand.
+    //   2. When inserting that new character, setComposingText is called with
+    //      the entire new text (or something more complicated?) when it should
+    //      be called with just the new single character.
+    //   3. Sometimes commit is called instead of setComposingText, and this
+    //      produces a similar bug where characters are not inserted at the
+    //      cursor. I'm not sure exactly how to reproduce.
+    //
+    // As a potential solution, I tried calling commitText when the cursor is
+    // moved. This does commit the composing text, but it doesn't affect the
+    // incorrect calls that come back to setComposingRegion and setComposingText!
+    // They still happen identically to before.
     @Override
     public boolean setComposingRegion(int start, int end) {
+        Log.d("justin", "setComposingRegion: " + start + ", " + end);
+
+        /*
+        // TODO(justinmc): Hack #1: when this is called and currently -1,-1, set it
+        // instead to most recent non-empty region.
+        // Works for the main bug case, but there are others that still fail.
+        if (lastComposingStart == -1 && lastComposingEnd == -1) {
+          start = lastExistingComposingStart;
+          end = lastExistingComposingEnd;
+          Log.d("justin", "setComposingRegion actually jk: " + start + ", " + end);
+        }
+        */
+
+        /*
+        if (lastComposingStart == -1 && lastComposingEnd == -1) {
+          commitText();
+          updateEditingState();
+        }
+        */
+
+        /*
         boolean result = super.setComposingRegion(start, end);
         updateEditingState();
         return result;
+        */
+        return true;
     }
 
     @Override
     public boolean setComposingText(CharSequence text, int newCursorPosition) {
+        Log.d("justin", newCursorPosition + ": ( setComposingText " + text);
         boolean result;
         if (text.length() == 0) {
             result = super.commitText(text, newCursorPosition);
         } else {
+            if (text != null) {
+              int composingLength = lastComposingEnd - lastComposingStart;
+              if (text.length() > composingLength + 1) {
+              //if (lastComposingStart == -1 && lastComposingEnd == -1 && text.length() > 1) {
+                text = text.subSequence(text.length() - composingLength - 1, text.length() - composingLength);
+              }
+            }
+            lastComposingText = text;
+            didCommit = true;
             result = super.setComposingText(text, newCursorPosition);
         }
         updateEditingState();
@@ -132,6 +309,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean setSelection(int start, int end) {
+        Log.d("justin", "setSelection: " + start + ", " + end);
         boolean result = super.setSelection(start, end);
         updateEditingState();
         return result;
@@ -152,6 +330,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean sendKeyEvent(KeyEvent event) {
+        Log.d("justin", "sendKeyEvent");
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             if (event.getKeyCode() == KeyEvent.KEYCODE_DEL) {
                 int selStart = clampIndexToEditable(Selection.getSelectionStart(mEditable), mEditable);
@@ -223,6 +402,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean performEditorAction(int actionCode) {
+        Log.d("justin", "performEditorAction: " + actionCode);
         switch (actionCode) {
             case EditorInfo.IME_ACTION_NONE:
                 textInputChannel.newline(mClient);
