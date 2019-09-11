@@ -141,6 +141,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean finishComposingText() {
+        new Exception().printStackTrace();
         Log.d("justin", "finishComposingText");
         /*
         if (lastComposingStart == -1 && lastComposingEnd == -1 && !didCommit) {
@@ -277,21 +278,19 @@ class InputConnectionAdaptor extends BaseInputConnection {
         }
         */
 
-        /*
         boolean result = super.setComposingRegion(start, end);
         updateEditingState();
         return result;
-        */
-        return true;
     }
 
     @Override
     public boolean setComposingText(CharSequence text, int newCursorPosition) {
-        Log.d("justin", newCursorPosition + ": ( setComposingText " + text);
+        Log.d("justin", newCursorPosition + ": setComposingText " + text);
         boolean result;
         if (text.length() == 0) {
             result = super.commitText(text, newCursorPosition);
         } else {
+            /*
             if (text != null) {
               int composingLength = lastComposingEnd - lastComposingStart;
               if (text.length() > composingLength + 1) {
@@ -301,6 +300,8 @@ class InputConnectionAdaptor extends BaseInputConnection {
             }
             lastComposingText = text;
             didCommit = true;
+            */
+
             result = super.setComposingText(text, newCursorPosition);
         }
         updateEditingState();

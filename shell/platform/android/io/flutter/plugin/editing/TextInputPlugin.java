@@ -20,6 +20,8 @@ import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.systemchannels.TextInputChannel;
 import io.flutter.plugin.platform.PlatformViewsController;
 
+import io.flutter.Log;
+
 /**
  * Android implementation of the text input plugin.
  */
@@ -295,6 +297,11 @@ public class TextInputPlugin {
 
     private void setTextInputEditingState(View view, TextInputChannel.TextEditState state) {
         if (!mRestartInputPending && state.text.equals(mEditable.toString())) {
+            Log.d("justin", "setTextInputEditingState state: " + state.text);
+            Log.d("justin", "setTextInputEditingState stuff: " + Math.max(Selection.getSelectionStart(mEditable), 0)
+                    + Math.max(Selection.getSelectionEnd(mEditable), 0)
+                    + BaseInputConnection.getComposingSpanStart(mEditable)
+                    + BaseInputConnection.getComposingSpanEnd(mEditable));
             applyStateToSelection(state);
             mImm.updateSelection(mView, Math.max(Selection.getSelectionStart(mEditable), 0),
                     Math.max(Selection.getSelectionEnd(mEditable), 0),
