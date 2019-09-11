@@ -141,7 +141,6 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean finishComposingText() {
-        new Exception().printStackTrace();
         Log.d("justin", "finishComposingText");
         /*
         if (lastComposingStart == -1 && lastComposingEnd == -1 && !didCommit) {
@@ -290,6 +289,9 @@ class InputConnectionAdaptor extends BaseInputConnection {
         if (text.length() == 0) {
             result = super.commitText(text, newCursorPosition);
         } else {
+            // TODO(justinmc): You hacked in finishComposingText, now you need
+            // to fix the problem where you're called with LO instead of O. Is
+            // the below going to fix that?
             /*
             if (text != null) {
               int composingLength = lastComposingEnd - lastComposingStart;

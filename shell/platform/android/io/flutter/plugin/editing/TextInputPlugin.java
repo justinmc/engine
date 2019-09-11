@@ -297,16 +297,15 @@ public class TextInputPlugin {
 
     private void setTextInputEditingState(View view, TextInputChannel.TextEditState state) {
         if (!mRestartInputPending && state.text.equals(mEditable.toString())) {
-            Log.d("justin", "setTextInputEditingState state: " + state.text);
-            Log.d("justin", "setTextInputEditingState stuff: " + Math.max(Selection.getSelectionStart(mEditable), 0)
-                    + Math.max(Selection.getSelectionEnd(mEditable), 0)
-                    + BaseInputConnection.getComposingSpanStart(mEditable)
-                    + BaseInputConnection.getComposingSpanEnd(mEditable));
             applyStateToSelection(state);
             mImm.updateSelection(mView, Math.max(Selection.getSelectionStart(mEditable), 0),
                     Math.max(Selection.getSelectionEnd(mEditable), 0),
                     BaseInputConnection.getComposingSpanStart(mEditable),
                     BaseInputConnection.getComposingSpanEnd(mEditable));
+            // TODO(justinmc): Call finishComposingText when the cursor position
+            // changes because that's what I see happening on the unaffected
+            // device.
+            lastInputConnection.finishComposingText();
         } else {
             mEditable.replace(0, mEditable.length(), state.text);
             applyStateToSelection(state);
