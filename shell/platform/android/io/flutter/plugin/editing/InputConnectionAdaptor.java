@@ -17,6 +17,11 @@ import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 
+import android.os.Bundle;
+import android.view.inputmethod.InputContentInfo;
+import android.view.inputmethod.CorrectionInfo;
+import android.view.inputmethod.CompletionInfo;
+
 import io.flutter.embedding.engine.systemchannels.TextInputChannel;
 import io.flutter.Log;
 import io.flutter.plugin.common.ErrorLogResult;
@@ -76,18 +81,80 @@ class InputConnectionAdaptor extends BaseInputConnection {
     }
 
     @Override
+    public boolean clearMetaKeyStates(int status) {
+      Log.d("justin", "clearMetaKeyStates");
+      return super.clearMetaKeyStates(status);
+    }
+
+    @Override
+    public void closeConnection() {
+      Log.d("justin", "closeConnection");
+      super.closeConnection();
+    }
+
+    @Override
+    public boolean commitCompletion(CompletionInfo info) {
+      Log.d("justin", "commitcompletion");
+      return super.commitCompletion(info);
+    }
+
+    @Override
+    public boolean commitContent(InputContentInfo info, int flags, Bundle opts) {
+      Log.d("justin", "commitContent " + flags);
+      return super.commitContent(info, flags, opts);
+    }
+
+    @Override
+    public boolean commitCorrection(CorrectionInfo correctionInfo) {
+      Log.d("justin", "commitCorrection");
+      return super.commitCorrection(correctionInfo);
+    }
+
+    @Override
+    public boolean deleteSurroundingTextInCodePoints(int beforeLength, int afterLength) {
+        Log.d("justin", "deleteSurroundingTextInCodePoints " + beforeLength + ", " + afterLength);
+        return super.deleteSurroundingTextInCodePoints(beforeLength, afterLength);
+    }
+
+    @Override
+    public boolean finishComposingText() {
+        Log.d("justin", "finishComposingText");
+        return super.finishComposingText();
+    }
+
+    @Override
+    public boolean performContextMenuAction (int id) {
+        Log.d("justin", "performContextMenuAction: " + id);
+        return super.performContextMenuAction(id);
+    }
+
+    @Override
+    public boolean performPrivateCommand (String action, Bundle data) {
+        Log.d("justin", "performPrivateCommand: " + action);
+        return super.performPrivateCommand(action, data);
+    }
+
+    @Override
+    public boolean requestCursorUpdates (int cursorUpdateMode) {
+        Log.d("justin", "requestCursorUpdates " + cursorUpdateMode);
+        return super.requestCursorUpdates(cursorUpdateMode);
+    }
+
+    @Override
     public Editable getEditable() {
         return mEditable;
     }
 
     @Override
     public boolean beginBatchEdit() {
+        Log.d("justin", "beginBatchUpdate");
         mBatchCount++;
         return super.beginBatchEdit();
     }
 
     @Override
     public boolean endBatchEdit() {
+        Log.d("justin", "endBatchUpdate");
         boolean result = super.endBatchEdit();
         mBatchCount--;
         updateEditingState();
@@ -96,6 +163,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean commitText(CharSequence text, int newCursorPosition) {
+        Log.d("justin", "commitText " + text);
         boolean result = super.commitText(text, newCursorPosition);
         updateEditingState();
         return result;
@@ -103,6 +171,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean deleteSurroundingText(int beforeLength, int afterLength) {
+        Log.d("justin", "deleteSurroundingText");
         if (Selection.getSelectionStart(mEditable) == -1)
             return true;
 
@@ -113,6 +182,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean setComposingRegion(int start, int end) {
+        Log.d("justin", "setComposingRegion");
         boolean result = super.setComposingRegion(start, end);
         updateEditingState();
         return result;
@@ -120,6 +190,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean setComposingText(CharSequence text, int newCursorPosition) {
+        Log.d("justin", "setComposingText: " + text);
         boolean result;
         if (text.length() == 0) {
             result = super.commitText(text, newCursorPosition);
@@ -132,6 +203,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean setSelection(int start, int end) {
+        Log.d("justin", "setSelection");
         boolean result = super.setSelection(start, end);
         updateEditingState();
         return result;
@@ -140,6 +212,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
     // Sanitizes the index to ensure the index is within the range of the
     // contents of editable.
     private static int clampIndexToEditable(int index, Editable editable) {
+        Log.d("justin", "clampIndexToEditable");
         int clamped = Math.max(0, Math.min(editable.length(), index));
         if (clamped != index) {
             Log.d("flutter", "Text selection index was clamped ("
@@ -152,6 +225,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean sendKeyEvent(KeyEvent event) {
+        Log.d("justin", "sendKeyEvent" + event.getAction());
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             if (event.getKeyCode() == KeyEvent.KEYCODE_DEL) {
                 int selStart = clampIndexToEditable(Selection.getSelectionStart(mEditable), mEditable);
@@ -223,6 +297,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean performEditorAction(int actionCode) {
+        Log.d("justin", "performEditorAction " + actionCode);
         switch (actionCode) {
             case EditorInfo.IME_ACTION_NONE:
                 textInputChannel.newline(mClient);
