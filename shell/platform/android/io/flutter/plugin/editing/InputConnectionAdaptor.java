@@ -195,7 +195,14 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean commitText(CharSequence text, int newCursorPosition) {
-        Log.d("justin", "commit");
+        Log.d("justin", newCursorPosition + ") commit: " + text);
+
+        // TODO(justinmc): HACK: If composing region is -1,-1, then prevent
+        // committing more than one character.
+        if (lastComposingStart == -1 && lastComposingEnd == -1) {
+          text = text.subSequence(0, 1);
+        }
+
         boolean result = super.commitText(text, newCursorPosition);
         updateEditingState();
         return result;
@@ -255,9 +262,37 @@ class InputConnectionAdaptor extends BaseInputConnection {
     // moved. This does commit the composing text, but it doesn't affect the
     // incorrect calls that come back to setComposingRegion and setComposingText!
     // They still happen identically to before.
+    //
+    // Here is the difference between the unaffected and affected keyboards
+    // natively:
+    //
+    //   1. Type a consonant.
+    //   2. Type a space.
+    //   3. Type backspace.
+    //   4. Type a vowel.
+    // The new affected keyboard sets the composing region to both characters
+    // for convenience.  The old unaffected keyboard just sets the composing
+    // region to the vowel, which is annoying.
+    //
+    // I'm continuing to try to hack it, but I really want to find an elegant
+    // solution. What if I spin up a native Android app and log every method in
+    // this file for reference? I want to know what needs to be called when I
+    // change cursor position.
     @Override
     public boolean setComposingRegion(int start, int end) {
         Log.d("justin", "setComposingRegion: " + start + ", " + end);
+
+        // TODO(justinmc): HACK: Can't change composing region after it was
+        // empty.
+        if (lastComposingStart == -1 && lastComposingEnd == -1) {
+          return false;
+        }
+        /*
+        if (end - start > lastComposingEnd - lastComposingStart + 1) {
+          start = lastComposingStart;
+          end = lastComposingStart;
+        }
+        */
 
         /*
         // TODO(justinmc): Hack #1: when this is called and currently -1,-1, set it
@@ -289,20 +324,20 @@ class InputConnectionAdaptor extends BaseInputConnection {
         if (text.length() == 0) {
             result = super.commitText(text, newCursorPosition);
         } else {
-            // TODO(justinmc): You hacked in finishComposingText, now you need
-            // to fix the problem where you're called with LO instead of O. Is
-            // the below going to fix that?
-            /*
             if (text != null) {
+              // TODO(justinmc): HACK: When the length of the text here is more
+              // than 1 character longer than the last composingLength, then
+              // there was a broken jump of some sort. Only accept one extra
+              // character and ignore the rest.
               int composingLength = lastComposingEnd - lastComposingStart;
               if (text.length() > composingLength + 1) {
               //if (lastComposingStart == -1 && lastComposingEnd == -1 && text.length() > 1) {
-                text = text.subSequence(text.length() - composingLength - 1, text.length() - composingLength);
+                //text = text.subSequence(text.length() - composingLength - 1, text.length() - composingLength);
+                text = text.subSequence(text.length() - composingLength - 1, text.length());
               }
             }
             lastComposingText = text;
             didCommit = true;
-            */
 
             result = super.setComposingText(text, newCursorPosition);
         }

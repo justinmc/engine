@@ -302,7 +302,7 @@ public class TextInputPlugin {
                     Math.max(Selection.getSelectionEnd(mEditable), 0),
                     BaseInputConnection.getComposingSpanStart(mEditable),
                     BaseInputConnection.getComposingSpanEnd(mEditable));
-            // TODO(justinmc): Call finishComposingText when the cursor position
+            // TODO(justinmc): HACK: Call finishComposingText when the cursor position
             // changes because that's what I see happening on the unaffected
             // device.
             lastInputConnection.finishComposingText();
