@@ -96,6 +96,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean commitText(CharSequence text, int newCursorPosition) {
+        Log.d("justin", "commitText");
         boolean result = super.commitText(text, newCursorPosition);
         updateEditingState();
         return result;
@@ -113,6 +114,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean setComposingRegion(int start, int end) {
+        Log.d("justin", "setComposingRegion");
         boolean result = super.setComposingRegion(start, end);
         updateEditingState();
         return result;
@@ -120,6 +122,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean setComposingText(CharSequence text, int newCursorPosition) {
+        Log.d("justin", "setComposingText");
         boolean result;
         if (text.length() == 0) {
             result = super.commitText(text, newCursorPosition);
@@ -132,6 +135,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean setSelection(int start, int end) {
+        Log.d("justin", "setSelection");
         boolean result = super.setSelection(start, end);
         updateEditingState();
         return result;

@@ -16,6 +16,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
 
+import io.flutter.Log;
 import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.systemchannels.TextInputChannel;
 import io.flutter.plugin.platform.PlatformViewsController;
@@ -287,6 +288,7 @@ public class TextInputPlugin {
         int selEnd = state.selectionEnd;
         if (selStart >= 0 && selStart <= mEditable.length() && selEnd >= 0
                 && selEnd <= mEditable.length()) {
+            Log.d("justin", "Selection.setSelection " + selStart + " - " + selEnd);
             Selection.setSelection(mEditable, selStart, selEnd);
         } else {
             Selection.removeSelection(mEditable);
@@ -296,10 +298,25 @@ public class TextInputPlugin {
     private void setTextInputEditingState(View view, TextInputChannel.TextEditState state) {
         if (!mRestartInputPending && state.text.equals(mEditable.toString())) {
             applyStateToSelection(state);
-            mImm.updateSelection(mView, Math.max(Selection.getSelectionStart(mEditable), 0),
-                    Math.max(Selection.getSelectionEnd(mEditable), 0),
-                    BaseInputConnection.getComposingSpanStart(mEditable),
-                    BaseInputConnection.getComposingSpanEnd(mEditable));
+
+            final int selectionStart = Math.max(Selection.getSelectionStart(mEditable), 0);
+            final int selectionEnd = Math.max(Selection.getSelectionEnd(mEditable), 0);
+            int composingStart = BaseInputConnection.getComposingSpanStart(mEditable);
+            int composingEnd = BaseInputConnection.getComposingSpanEnd(mEditable);
+            if (selectionStart == selectionEnd) {
+              composingStart = -1;
+              composingEnd = -1;
+            }
+            Log.d("justin", "mImm.updateSelection "
+              + selectionStart
+              + selectionEnd
+              + ", " + composingStart
+              + " - " + composingEnd);
+            mImm.updateSelection(mView, selectionStart, selectionEnd,
+                composingStart, composingEnd);
+            if (selectionStart == selectionEnd) {
+              lastInputConnection.finishComposingText();
+            }
         } else {
             mEditable.replace(0, mEditable.length(), state.text);
             applyStateToSelection(state);
