@@ -298,11 +298,16 @@ public class TextInputPlugin {
     private void setTextInputEditingState(View view, TextInputChannel.TextEditState state) {
         if (!mRestartInputPending && state.text.equals(mEditable.toString())) {
             applyStateToSelection(state);
+            mImm.updateSelection(mView, Math.max(Selection.getSelectionStart(mEditable), 0),
+                    Math.max(Selection.getSelectionEnd(mEditable), 0),
+                    BaseInputConnection.getComposingSpanStart(mEditable),
+                    BaseInputConnection.getComposingSpanEnd(mEditable));
 
             final int selectionStart = Math.max(Selection.getSelectionStart(mEditable), 0);
             final int selectionEnd = Math.max(Selection.getSelectionEnd(mEditable), 0);
             int composingStart = BaseInputConnection.getComposingSpanStart(mEditable);
             int composingEnd = BaseInputConnection.getComposingSpanEnd(mEditable);
+            /*
             if (selectionStart == selectionEnd) {
               composingStart = -1;
               composingEnd = -1;
@@ -314,6 +319,11 @@ public class TextInputPlugin {
               + " - " + composingEnd);
             mImm.updateSelection(mView, selectionStart, selectionEnd,
                 composingStart, composingEnd);
+            if (selectionStart == selectionEnd) {
+              lastInputConnection.finishComposingText();
+            }
+            */
+
             if (selectionStart == selectionEnd) {
               lastInputConnection.finishComposingText();
             }

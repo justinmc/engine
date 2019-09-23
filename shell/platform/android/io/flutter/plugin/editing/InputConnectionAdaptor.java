@@ -15,6 +15,8 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.ExtractedText;
+import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.InputMethodManager;
 
 import io.flutter.embedding.engine.systemchannels.TextInputChannel;
@@ -82,16 +84,43 @@ class InputConnectionAdaptor extends BaseInputConnection {
 
     @Override
     public boolean beginBatchEdit() {
+      /*
         mBatchCount++;
         return super.beginBatchEdit();
+        */
+        synchronized(this) {
+            if (mBatchCount >= 0) {
+                // TODO(justinmc): This is also vital.
+                //mFlutterView.beginBatchEdit();
+                mBatchCount++;
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public boolean endBatchEdit() {
+      /*
         boolean result = super.endBatchEdit();
         mBatchCount--;
         updateEditingState();
         return result;
+        */
+
+        synchronized(this) {
+            if (mBatchCount > 0) {
+                // When the connection is reset by the InputMethodManager and reportFinish
+                // is called, some endBatchEdit calls may still be asynchronously received from the
+                // IME. Do not take these into account, thus ensuring that this IC's final
+                // contribution to mTextView's nested batch edit count is zero.
+                // TODO(justinmc): This is also vital.
+                //mFlutterView.endBatchEdit();
+                mBatchCount--;
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -255,5 +284,21 @@ class InputConnectionAdaptor extends BaseInputConnection {
                 break;
         }
         return true;
+    }
+
+    @Override
+    public ExtractedText getExtractedText(ExtractedTextRequest request, int flags) {
+        if (mFlutterView != null) {
+            ExtractedText et = new ExtractedText();
+            /*
+            if (mFlutterView.extractText(request, et)) {
+                if ((flags&GET_EXTRACTED_TEXT_MONITOR) != 0) {
+                    mFlutterView.setExtracting(request);
+                }
+                return et;
+            }
+            */
+        }
+        return null;
     }
 }
