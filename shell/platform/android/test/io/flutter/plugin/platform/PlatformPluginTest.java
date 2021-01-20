@@ -114,6 +114,8 @@ public class PlatformPluginTest {
     clipboardManager.setPrimaryClip(clip);
     assertTrue(platformPlugin.mPlatformMessageHandler.clipboardHasStrings());
 
+    // TODO(justinmc): This test fails because hasPrimaryClip returns true for
+    // empty string.
     clip = ClipData.newPlainText("", "");
     clipboardManager.setPrimaryClip(clip);
     assertFalse(platformPlugin.mPlatformMessageHandler.clipboardHasStrings());
