@@ -24,6 +24,7 @@ static constexpr char kGetClipboardDataMethod[] = "Clipboard.getData";
 static constexpr char kSetClipboardDataMethod[] = "Clipboard.setData";
 
 static constexpr char kTextPlainFormat[] = "text/plain";
+static constexpr char kFakeContentType[] = "text/cmadeup";
 
 // Test implementation of PlatformHandler to allow testing the PlatformHandler
 // logic.
@@ -80,29 +81,29 @@ TEST(PlatformHandler, GettingTextCallsThrough) {
       [](const uint8_t* reply, size_t reply_size) {}));
 }
 
-/*
 TEST(PlatformHandler, RejectsGettingUnknownTypes) {
   TestBinaryMessenger messenger;
   TestPlatformHandler platform_handler(&messenger);
 
-  auto args = std::make_unique<rapidjson::Document>(rapidjson::kArrayType);
-  auto& allocator = args->GetAllocator();
-  args->PushBack("madeup/contenttype", allocator);
-  auto encoded = JsonMethodCodec::GetInstance().EncodeMethodCall(
-      MethodCall<rapidjson::Document>(kGetClipboardDataMethod,
-                                      std::move(args)));
+  std::ostringstream jsonStringStream;
+  jsonStringStream << "{\"method\":\"" << kGetClipboardDataMethod << "\",\"args\":\"" << kFakeContentType << "\"}";
+  std::string jsonString = jsonStringStream.str();
+  unsigned char json [256];
+  std::copy(jsonString.begin(), jsonString.end(), json);
+  unsigned char* data = &json[0];
 
   MockMethodResult result;
   // Requsting an unknow content type is an error.
   EXPECT_CALL(result, ErrorInternal(_, _, _));
   EXPECT_TRUE(messenger.SimulateEngineMessage(
-      kChannelName, encoded->data(), encoded->size(),
+      kChannelName, data, strlen((char*)data),
       [&](const uint8_t* reply, size_t reply_size) {
         JsonMethodCodec::GetInstance().DecodeAndProcessResponseEnvelope(
             reply, reply_size, &result);
       }));
 }
 
+/*
 TEST(PlatformHandler, SettingTextCallsThrough) {
   TestBinaryMessenger messenger;
   TestPlatformHandler platform_handler(&messenger);
