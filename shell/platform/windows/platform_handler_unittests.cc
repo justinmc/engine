@@ -84,7 +84,6 @@ TEST(PlatformHandler, GettingTextCallsThrough) {
 TEST(PlatformHandler, RejectsGettingUnknownTypes) {
   TestBinaryMessenger messenger;
   TestPlatformHandler platform_handler(&messenger);
-
   std::ostringstream jsonStringStream;
   jsonStringStream << "{\"method\":\"" << kGetClipboardDataMethod << "\",\"args\":\"" << kFakeContentType << "\"}";
   std::string jsonString = jsonStringStream.str();
@@ -103,7 +102,6 @@ TEST(PlatformHandler, RejectsGettingUnknownTypes) {
       }));
 }
 
-/*
 TEST(PlatformHandler, SettingTextCallsThrough) {
   TestBinaryMessenger messenger;
   TestPlatformHandler platform_handler(&messenger);
@@ -151,7 +149,6 @@ TEST(PlatformHandler, RejectsSettingUnknownTypes) {
             reply, reply_size, &result);
       }));
 }
-*/
 
 }  // namespace testing
 }  // namespace flutter
