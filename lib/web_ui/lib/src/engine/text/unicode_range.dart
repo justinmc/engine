@@ -2,6 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+const int _kChar_0 = 48;
+const int _kChar_9 = 57;
+const int _kChar_A = 65;
+const int _kChar_Z = 90;
+const int _kChar_a = 97;
+const int _kChar_z = 122;
+const int _kCharBang = 33;
+
 const int kChar_0 = 48;
 const int kChar_9 = 57;
 const int kChar_A = 65;
@@ -210,7 +218,7 @@ List<UnicodeRange<P>> _unpackProperties<P>(
     i += 4;
 
     int rangeEnd;
-    if (packedData.codeUnitAt(i) == kCharBang) {
+    if (packedData.codeUnitAt(i) == _kCharBang) {
       rangeEnd = rangeStart;
       i++;
     } else {
@@ -231,15 +239,15 @@ int _getEnumIndexFromPackedValue(int charCode) {
   // This has to stay in sync with [EnumValue.serialized] in
   // `tool/unicode_sync_script.dart`.
 
-  assert((charCode >= kChar_A && charCode <= kChar_Z) ||
-      (charCode >= kChar_a && charCode <= kChar_z));
+  assert((charCode >= _kChar_A && charCode <= _kChar_Z) ||
+      (charCode >= _kChar_a && charCode <= _kChar_z));
 
   // Uppercase letters were assigned to the first 26 enum values.
-  if (charCode <= kChar_Z) {
-    return charCode - kChar_A;
+  if (charCode <= _kChar_Z) {
+    return charCode - _kChar_A;
   }
   // Lowercase letters were assigned to enum values above 26.
-  return 26 + charCode - kChar_a;
+  return 26 + charCode - _kChar_a;
 }
 
 int _consumeInt(String packedData, int index) {
@@ -261,12 +269,12 @@ int _consumeInt(String packedData, int index) {
 /// Does the same thing as [int.parse(str, 36)] but takes only a single
 /// character as a [charCode] integer.
 int _getIntFromCharCode(int charCode) {
-  assert((charCode >= kChar_0 && charCode <= kChar_9) ||
-      (charCode >= kChar_a && charCode <= kChar_z));
+  assert((charCode >= _kChar_0 && charCode <= _kChar_9) ||
+      (charCode >= _kChar_a && charCode <= _kChar_z));
 
-  if (charCode <= kChar_9) {
-    return charCode - kChar_0;
+  if (charCode <= _kChar_9) {
+    return charCode - _kChar_0;
   }
   // "a" starts from 10 and remaining letters go up from there.
-  return charCode - kChar_a + 10;
+  return charCode - _kChar_a + 10;
 }

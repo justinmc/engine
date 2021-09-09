@@ -77,8 +77,6 @@ class CanvasParagraph implements EngineParagraph {
   @override
   bool isLaidOut = false;
 
-  bool get isRtl => paragraphStyle.effectiveTextDirection == ui.TextDirection.rtl;
-
   ui.ParagraphConstraints? _lastUsedConstraints;
 
   late final TextLayoutService _layoutService = TextLayoutService(this);
@@ -173,7 +171,7 @@ class CanvasParagraph implements EngineParagraph {
 
     // 2. Append all spans to the paragraph.
 
-    FlatTextSpan? span;
+    ParagraphSpan? span;
 
     html.HtmlElement element = rootElement;
     final List<EngineLineMetrics> lines = computeLineMetrics();
@@ -185,34 +183,21 @@ class CanvasParagraph implements EngineParagraph {
       }
 
       final EngineLineMetrics line = lines[i];
-      final List<RangeBox> boxes = line.boxes!;
-      final StringBuffer buffer = StringBuffer();
-
-      int j = 0;
-      while (j < boxes.length) {
-        final RangeBox box = boxes[j++];
-        if (box is SpanBox && box.span == span) {
-          buffer.write(box.toText());
-          continue;
-        }
-
-        if (buffer.isNotEmpty) {
-          domRenderer.appendText(element, buffer.toString());
-          buffer.clear();
-        }
-
+      for (final RangeBox box in line.boxes!) {
         if (box is SpanBox) {
-          span = box.span;
-          element = domRenderer.createElement('span') as html.HtmlElement;
-          applyTextStyleToElement(
-            element: element,
-            style: box.span.style,
-            isSpan: true,
-          );
-          domRenderer.append(rootElement, element);
-          buffer.write(box.toText());
+          if (box.span != span) {
+            span = box.span;
+            element = domRenderer.createElement('span') as html.HtmlElement;
+            applyTextStyleToElement(
+              element: element,
+              style: box.span.style,
+              isSpan: true
+            );
+            domRenderer.append(rootElement, element);
+          }
+          domRenderer.appendText(element, box.toText());
         } else if (box is PlaceholderBox) {
-          span = null;
+          span = box.placeholder;
           // If there's a line-end after this placeholder, we want the <BR> to
           // be inserted in the root paragraph element.
           element = rootElement;
@@ -223,11 +208,6 @@ class CanvasParagraph implements EngineParagraph {
         } else {
           throw UnimplementedError('Unknown box type: ${box.runtimeType}');
         }
-      }
-
-      if (buffer.isNotEmpty) {
-        domRenderer.appendText(element, buffer.toString());
-        buffer.clear();
       }
 
       final String? ellipsis = line.ellipsis;
