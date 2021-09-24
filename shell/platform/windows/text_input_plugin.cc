@@ -58,6 +58,8 @@ void TextInputPlugin::TextHook(FlutterWindowsView* view,
     return;
   }
   active_model_->AddText(text);
+  printf("justin calling sendstate to update framework from engine in TextHook\n");
+  fflush(stdout);
   SendStateUpdate(*active_model_);
 }
 
@@ -216,6 +218,13 @@ void TextInputPlugin::HandleMethodCall(
     // Flutter uses -1/-1 for invalid; translate that to 0/0 for the model.
     int selection_base = base->value.GetInt();
     int selection_extent = extent->value.GetInt();
+    printf("justin engine received editing state from framework %d, %d with text |%s|. We've already got |%s|\n", selection_base, selection_extent, text->value.GetString(), active_model_->GetText().c_str());
+    fflush(stdout);
+    // TODO(justinmc): So the text has already been set to "1", then the selection
+    // update to -1,-1 comes in and its reset to 0,0, which isn't a change.
+    // So, the framework doesnt get an update.  That's my guess!
+    // No, because the "1" should be new! Right? Log it.
+    // Simply, Windows isn't sending an ACK.
     if (selection_base == -1 && selection_extent == -1) {
       selection_base = selection_extent = 0;
     }
@@ -240,6 +249,7 @@ void TextInputPlugin::HandleMethodCall(
       active_model_->SetComposingRange(
           TextRange(composing_base, composing_extent), cursor_offset);
     }
+    SendStateUpdate(*active_model_);
   } else if (method.compare(kSetMarkedTextRect) == 0) {
     if (!method_call.arguments() || method_call.arguments()->IsNull()) {
       result->Error(kBadArgumentError, "Method invoked without args");
@@ -330,6 +340,8 @@ void TextInputPlugin::SendStateUpdate(const TextInputModel& model) {
       kTextKey, rapidjson::Value(model.GetText(), allocator).Move(), allocator);
   args->PushBack(editing_state, allocator);
 
+  printf("justin updating framework with editing state\n");
+  fflush(stdout);
   channel_->InvokeMethod(kUpdateEditingStateMethod, std::move(args));
 }
 
