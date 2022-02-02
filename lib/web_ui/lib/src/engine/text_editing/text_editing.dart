@@ -931,6 +931,8 @@ abstract class DefaultTextEditingStrategy implements TextEditingStrategy {
 
     final String autocorrectValue = config.autocorrect ? 'on' : 'off';
     activeDomElement.setAttribute('autocorrect', autocorrectValue);
+
+    activeDomElement.setAttribute('spellcheck', 'true');
   }
 
   @override
