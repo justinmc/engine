@@ -986,21 +986,15 @@ static void SetEntryPoint(flutter::Settings* settings, NSString* entrypoint, NSS
 #pragma mark - FlutterViewEngineDelegate
 
 - (void)flutterTextInputView:(FlutterTextInputView*)textInputView showToolbar:(int)client {
-  // TODO(justinmc): Switch from the TextInputClient to Scribble channel when
-  // the framework has finished transitioning to the Scribble channel.
-  // https://github.com/flutter/flutter/pull/115296
-  [_textInputChannel.get() invokeMethod:@"TextInputClient.showToolbar" arguments:@[ @(client) ]];
+  [_textInputChannel.get() invokeMethod:@"Scribble.showToolbar" arguments:@[ @(client) ]];
 }
 
 - (void)flutterTextInputPlugin:(FlutterTextInputPlugin*)textInputPlugin
                   focusElement:(UIScribbleElementIdentifier)elementIdentifier
                        atPoint:(CGPoint)referencePoint
                         result:(FlutterResult)callback {
-  // TODO(justinmc): Switch from the TextInputClient to Scribble channel when
-  // the framework has finished transitioning to the Scribble channel.
-  // https://github.com/flutter/flutter/pull/115296
   [_textInputChannel.get()
-      invokeMethod:@"TextInputClient.focusElement"
+      invokeMethod:@"Scribble.focusElement"
          arguments:@[ elementIdentifier, @(referencePoint.x), @(referencePoint.y) ]
             result:callback];
 }
@@ -1008,47 +1002,30 @@ static void SetEntryPoint(flutter::Settings* settings, NSString* entrypoint, NSS
 - (void)flutterTextInputPlugin:(FlutterTextInputPlugin*)textInputPlugin
          requestElementsInRect:(CGRect)rect
                         result:(FlutterResult)callback {
-  // TODO(justinmc): Switch from the TextInputClient to Scribble channel when
-  // the framework has finished transitioning to the Scribble channel.
-  // https://github.com/flutter/flutter/pull/115296
   [_textInputChannel.get()
-      invokeMethod:@"TextInputClient.requestElementsInRect"
+      invokeMethod:@"Scribble.requestElementsInRect"
          arguments:@[ @(rect.origin.x), @(rect.origin.y), @(rect.size.width), @(rect.size.height) ]
             result:callback];
 }
 
 - (void)flutterTextInputViewScribbleInteractionBegan:(FlutterTextInputView*)textInputView {
-  // TODO(justinmc): Switch from the TextInputClient to Scribble channel when
-  // the framework has finished transitioning to the Scribble channel.
-  // https://github.com/flutter/flutter/pull/115296
-  [_textInputChannel.get() invokeMethod:@"TextInputClient.scribbleInteractionBegan" arguments:nil];
+  [_textInputChannel.get() invokeMethod:@"Scribble.scribbleInteractionBegan" arguments:nil];
 }
 
 - (void)flutterTextInputViewScribbleInteractionFinished:(FlutterTextInputView*)textInputView {
-  // TODO(justinmc): Switch from the TextInputClient to Scribble channel when
-  // the framework has finished transitioning to the Scribble channel.
-  // https://github.com/flutter/flutter/pull/115296
-  [_textInputChannel.get() invokeMethod:@"TextInputClient.scribbleInteractionFinished"
-                              arguments:nil];
+  [_textInputChannel.get() invokeMethod:@"Scribble.scribbleInteractionFinished" arguments:nil];
 }
 
 - (void)flutterTextInputView:(FlutterTextInputView*)textInputView
     insertTextPlaceholderWithSize:(CGSize)size
                        withClient:(int)client {
-  // TODO(justinmc): Switch from the TextInputClient to Scribble channel when
-  // the framework has finished transitioning to the Scribble channel.
-  // https://github.com/flutter/flutter/pull/115296
-  [_textInputChannel.get() invokeMethod:@"TextInputClient.insertTextPlaceholder"
+  [_textInputChannel.get() invokeMethod:@"Scribble.insertTextPlaceholder"
                               arguments:@[ @(client), @(size.width), @(size.height) ]];
 }
 
 - (void)flutterTextInputView:(FlutterTextInputView*)textInputView
        removeTextPlaceholder:(int)client {
-  // TODO(justinmc): Switch from the TextInputClient to Scribble channel when
-  // the framework has finished transitioning to the Scribble channel.
-  // https://github.com/flutter/flutter/pull/115296
-  [_textInputChannel.get() invokeMethod:@"TextInputClient.removeTextPlaceholder"
-                              arguments:@[ @(client) ]];
+  [_textInputChannel.get() invokeMethod:@"Scribble.removeTextPlaceholder" arguments:@[ @(client) ]];
 }
 
 - (void)flutterTextInputViewDidResignFirstResponder:(FlutterTextInputView*)textInputView {
