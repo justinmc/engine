@@ -4,15 +4,20 @@
 
 package io.flutter.embedding.android;
 
+import static io.flutter.Build.API_LEVELS;
+
 import android.app.Activity;
 import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver.OnWindowFocusChangeListener;
+import android.window.BackEvent;
+import android.window.OnBackAnimationCallback;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -1009,6 +1014,7 @@ public class FlutterFragment extends Fragment
     return new FlutterActivityAndFragmentDelegate(host);
   }
 
+  /*
   private final OnBackPressedCallback onBackPressedCallback =
       new OnBackPressedCallback(true) {
         @Override
@@ -1016,6 +1022,38 @@ public class FlutterFragment extends Fragment
           onBackPressed();
         }
       };
+      */
+
+  private final OnBackPressedCallback onBackPressedCallback =
+      Build.VERSION.SDK_INT < API_LEVELS.API_33 ? null : createOnBackPressedCallback();
+
+  private OnBackPressedCallback createOnBackPressedCallback() {
+    if (Build.VERSION.SDK_INT >= API_LEVELS.API_34) {
+      return new OnBackAnimationCallback() {
+        @Override
+        public void onBackInvoked() {
+          commitBackGesture();
+        }
+
+        @Override
+        public void onBackCancelled() {
+          cancelBackGesture();
+        }
+
+        @Override
+        public void onBackProgressed(@NonNull BackEvent backEvent) {
+          updateBackGestureProgress(backEvent);
+        }
+
+        @Override
+        public void onBackStarted(@NonNull BackEvent backEvent) {
+          startBackGesture(backEvent);
+        }
+      };
+    }
+
+    return this::onBackPressed;
+  }
 
   public FlutterFragment() {
     // Ensure that we at least have an empty Bundle of arguments so that we don't
